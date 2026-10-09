@@ -30,21 +30,27 @@ public class MappedLibraryTypeInfo implements MappedComprable<Type,MappedLibrary
 
 
 	public void setClass(Class<? extends AbstractType<?,?>> definitionClass,boolean override) {
+		boolean success = false;
 		if(Definition.class.isAssignableFrom(definitionClass)){
 			if(this.definitionClass.isPresent() && !override) {
 				throw  new RuntimeException("Cannot add definition class");
 			}
-			this.definitionClass = Optional.of(definitionClass.asSubclass(Definition.class));
+			this.definitionClass = Optional.of((Class<? extends Definition<?, ?>>) (Class<?>) definitionClass.asSubclass(Definition.class));;
+			success = true;
 		}
 
 		if(Usage.class.isAssignableFrom(definitionClass)){
 			if(this.usageClass.isPresent() && !override) {
 				throw  new RuntimeException("Cannot add usage class");
 			}
-			this.usageClass = Optional.of(definitionClass.asSubclass(Usage.class));
+			this.usageClass =Optional.of((Class<? extends Usage<?, ?, ?>>) (Class<?>) definitionClass.asSubclass(Usage.class));
+			success = true;
 		}
-		throw new IllegalStateException("Class %s is not a subclass of Definition or Usage".formatted(definitionClass.getName()));
 
+		if(!success){
+			throw new IllegalStateException("Class %s is not a subclass of Definition or Usage".formatted(definitionClass.getName()));
+
+		}
 	}
 
 	public void setClass(Class<? extends AbstractType<?,?>> definitionClass) {
