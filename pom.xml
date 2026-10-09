@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>sysml-twin-mapper</artifactId>
+    <artifactId>sysml-library-mapper</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
