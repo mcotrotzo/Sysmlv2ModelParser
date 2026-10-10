@@ -37,7 +37,6 @@ public class SysmlConverterMain {
 
 
 	public SysmlConverterMain(String libraryZip, Executor executor) throws IOException {
-		Configurator.setLevel("Mapper", String.valueOf(Level.INFO));
 		this.libraryZip = libraryZip;
 		this.executor = executor;
 		init();
@@ -49,6 +48,7 @@ public class SysmlConverterMain {
 	}
 
 	private void init() throws IOException {
+		Configurator.setLevel("Mapper", String.valueOf(Level.INFO));
 		initSysMLInteractive();
 		initStandardLibrary();
 		initLibrary();
