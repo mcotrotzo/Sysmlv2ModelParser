@@ -2,6 +2,7 @@ package Executor;
 
 
 import Mapper.NewUtil;
+import Rules.CheckUnMappedElements;
 import Rules.MultiType;
 import Rules.MultiplicityRule;
 
@@ -16,6 +17,6 @@ public class DefaultRuleExecutor extends Executor {
 
 	@Override
 	public List<SemanticRule> getSemanticRules(NewUtil newUtil) {
-		return List.of();
+		return List.of(new CheckUnMappedElements(newUtil));
 	}
 }

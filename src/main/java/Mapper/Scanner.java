@@ -112,8 +112,9 @@ public class Scanner {
 			Class<? extends Type> metaclass = getCastedClass(values.getValue("value"));
 			MetaclassInfo<?> metaclassInfo = scanMappedResult.getMetaclassinfos().computeIfAbsent(metaclass, MetaclassInfo::new);
 			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
+			checkConstructorFor(mappedClass, metaclass);
 			metaclassInfo.setClass(mappedClass, core);
-			log.info("Found metaclass mapping: {} -> {} (core {})", classInfo.getName(), metaclassInfo.getMetaclass().getName(), core.getSimpleName());
+			log.debug("Found metaclass mapping: {} -> {} (core {})", classInfo.getName(), metaclassInfo.getMetaclass().getName(), core.getSimpleName());
 		}
 
 		if(classInfo.hasAnnotation(MappedLibrary.class)){
@@ -123,7 +124,17 @@ public class Scanner {
 			MappedLibraryTypeInfo mappedLibraryInfo = scanMappedResult.getStandardinfos()
 					.computeIfAbsent(libraryName, name -> new MappedLibraryTypeInfo(newUtil, name));
 			mappedLibraryInfo.setClass(mappedClass, core);
-			log.info("Found library mapping: {} -> {} (core {})", classInfo.getName(), libraryName, core.getSimpleName());
+			log.debug("Found library mapping: {} -> {} (core {})", classInfo.getName(), libraryName, core.getSimpleName());
+		}
+	}
+
+	// the metaclass is known from the annotation, so the (element, Mapper) constructor must accept it
+	private void checkConstructorFor(Class<?> mappedClass, Class<? extends Type> metaclass) {
+		boolean found = Arrays.stream(mappedClass.getConstructors())
+				.anyMatch(c -> c.getParameterCount() == 2 && c.getParameterTypes()[0].isAssignableFrom(metaclass) && c.getParameterTypes()[1].isAssignableFrom(Mapper.class));
+		if (!found) {
+			throw new IllegalStateException("Class %s is mapped to %s but has no public constructor (%s, Mapper)"
+					.formatted(mappedClass.getName(), metaclass.getSimpleName(), metaclass.getSimpleName()));
 		}
 	}
 
@@ -240,9 +251,37 @@ public class Scanner {
 
 	public <T extends AbstractType<?,?>,C extends Type> Optional<T> getMappedClass(C element,Mapper mapper,Class<T>clazz) {
 		// library types are preferred; metaclass mappings are the fallback
-		Optional<AbstractType<?, ?>> created = mappedLibraryTypeInfos.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper))
-				.or(() -> metaclassInfo.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper)));
-		return created.map(clazz::cast);
+		Optional<MappedLibraryTypeInfo> library = mappedLibraryTypeInfos.get(element);
+		if (library.isPresent()) {
+			logLibraryFallback(element, library.get());
+			return Optional.of(clazz.cast(library.get().create(element, mapper)));
+		}
+		Optional<MetaclassInfo<?>> metaclass = metaclassInfo.get(element);
+		metaclass.ifPresent(info -> logMetaclassSupertype(element, info));
+		return metaclass.map(info -> clazz.cast(info.create(element, mapper)));
+	}
+
+	// each fallback combination is logged once per run, not once per element
+	private final Set<String> loggedFallbacks = new HashSet<>();
+
+	// a more specific library type had no class for this kind of element, so a parent library type is used
+	private void logLibraryFallback(Type element, MappedLibraryTypeInfo used) {
+		for (MappedLibraryTypeInfo skipped : standardinfos.values()) {
+			if (skipped == used || !skipped.isSpecilizedBy(element) || !skipped.specialices(used)) continue;
+			String kind = element.eClass().getName();
+			if (loggedFallbacks.add(skipped.getLibraryName() + "|" + kind + "|" + used.getLibraryName())) {
+				log.info("'{}' ({}): {} has no class for it, using {}", element.getName(), kind, skipped.getLibraryName(), used.getLibraryName());
+			}
+		}
+	}
+
+	// no class is mapped for the exact metaclass of the element, so a mapped supertype catches it
+	private void logMetaclassSupertype(Type element, MetaclassInfo<?> used) {
+		Class<?> exact = element.eClass().getInstanceClass();
+		if (exact == used.getMetaclass()) return;
+		if (loggedFallbacks.add(exact.getName() + "|" + used.getMetaclass().getName())) {
+			log.warn("'{}' is a {}, no class is mapped for it, using supertype {} -> {}", element.getName(), exact.getSimpleName(), used.getMetaclass().getSimpleName(), used.getMappedClass().getSimpleName());
+		}
 	}
 
 	public Optional<AbstractType<?, ?>> getMappedClass(Type element,Mapper mapper) {

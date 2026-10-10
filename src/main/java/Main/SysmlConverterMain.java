@@ -4,6 +4,7 @@ import Executor.Executor;
 import Mapper.Mapper;
 import Mapper.NewUtil;
 import Mapper.ResourceContainer;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.resource.IResourceServiceProvider;
@@ -16,6 +17,7 @@ import Executor.DefaultRuleExecutor;
 import Executor.SemanticException;
 import Mapper.Scanner;
 import org.omg.sysml.interactive.SysMLInteractive;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 import java.util.*;
@@ -33,7 +35,9 @@ public class SysmlConverterMain {
 	private Executor executor = new DefaultRuleExecutor();
 	protected NewUtil newUtil;
 
+
 	public SysmlConverterMain(String libraryZip, Executor executor) throws IOException {
+		Configurator.setLevel("Mapper", String.valueOf(Level.INFO));
 		this.libraryZip = libraryZip;
 		this.executor = executor;
 		init();
