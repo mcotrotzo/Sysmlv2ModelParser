@@ -50,7 +50,6 @@ public class SysmlConverterMain {
 	}
 
 	private void init() throws IOException {
-		Configurator.setLevel("Mapper", String.valueOf(Level.INFO));
 		initSysMLInteractive();
 		initStandardLibrary();
 		initLibrary();

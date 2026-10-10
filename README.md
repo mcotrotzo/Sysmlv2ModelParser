@@ -178,9 +178,71 @@ public class MyConverterMain extends SysmlConverterMain {
 
 # Logging
 
-The parser logs through SLF4J with Log4j2 and sets the logger `Mapper` to INFO by itself. You do not have to configure anything.
+Here are the three Log4j2 configurations. Place your chosen configuration under `src/main/resources/log4j2.xml`.
 
-* **INFO:** a library type has no matching class, so the class of a parent library type is used.
-* **WARN:** an element has no class of its own and is mapped through a more general metaclass.
+## 1. No Logs (OFF)
 
-Each combination is logged only once. To see more, change the level in your own `log4j2.xml`, for example `DEBUG` to see every mapping found during the scan.
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="Mapper" level="OFF" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Root level="OFF">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+---
+
+## 2. INFO (Mapper INFO, WARN, and ERROR)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="Mapper" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Root level="ERROR">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+---
+
+## 3. INFO + DEBUG (Mapper DEBUG, INFO, WARN, and ERROR)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="Mapper" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Root level="ERROR">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
