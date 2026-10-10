@@ -4,6 +4,7 @@ import Executor.Executor;
 import Mapper.Mapper;
 import Mapper.NewUtil;
 import Mapper.ResourceContainer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -22,6 +23,7 @@ import org.slf4j.event.Level;
 import java.io.IOException;
 import java.util.*;
 
+@Slf4j
 public class SysmlConverterMain {
 
 	private static final String STANDARD_LIBRARY_ZIP = "sysml_library.zip";
@@ -73,6 +75,7 @@ public class SysmlConverterMain {
 		removeAllInputResources();
 		parseUserResources(path);
 		map();
+		log.info("Parsing completed successfully.");
 		return result;
 	}
 
