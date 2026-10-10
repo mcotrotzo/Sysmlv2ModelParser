@@ -1,0 +1,186 @@
+# SysmlModelParser
+
+SysmlModelParser reads SysML v2 models and turns them into Java objects. You decide with annotations which Java class is built for which SysML element. The parser finds these classes on its own by scanning the classpath at startup.
+
+Principle: only elements that have a class are mapped. Elements without a matching class are not skipped silently, they are reported by the rule `CheckUnMappedElements`.
+
+# Installation
+
+```xml
+<dependency>
+    <groupId>org.example</groupId>
+    <artifactId>sysml-library-mapper</artifactId>
+    <version>0.0.5</version>
+</dependency>
+```
+
+The package is hosted on GitHub Packages. Your `settings.xml` needs a server entry with the repository ID (for example `github`) and a token with `read:packages`.
+
+# Entry point
+
+```java
+SysmlConverterMain main = new SysmlConverterMain("MyLibrary.zip");
+ResultConverter result = main.parse("path/to/model");
+
+List<MyPartUsage> parts = result.getByType(MyPartUsage.class);
+```
+
+When created, `SysmlConverterMain`:
+
+1. Starts SysML Interactive.
+2. Loads the SysML standard library (`sysml_library.zip`, shipped with the parser).
+3. Loads your library. The name passed to the constructor is a zip file on the classpath, for example in `src/main/resources` or packed by the build into `target/classes`.
+4. Validates the library and throws immediately on errors.
+5. Scans the classpath for annotated classes and runs all scan checks (see below).
+
+`parse(String... paths)` removes the input of the previous call, reads all `.sysml` files below the given paths, validates them, runs the rules and maps. One instance can be reused; library and scan are built only once.
+
+Steps inside `parse`:
+
+1. Read and validate the input
+2. General rules (`executeGeneralRules`)
+3. Mapping
+4. Semantic rules (`executeSemanticRules`) on the result
+
+# Mapping classes
+
+Every mapped class extends `Definition` or `Usage` and carries exactly one annotation.
+
+## By library type
+
+```java
+@MappedLibrary(libraryName = "MyLibrary::Sensor", core = SensorCore.class)
+public class SensorUsage extends Usage<SensorCore, PartUsage, SensorDefinition> {
+    public SensorUsage(PartUsage element, Mapper mapper) { super(element, mapper); }
+}
+```
+
+`libraryName` is the qualified name of a type in your library. If the SysML element is a classifier, the definition class is used; if it is a feature, the usage class is used. So each library type can have one definition class and one usage class.
+
+## By metaclass
+
+```java
+@MappedMetaClass(value = ActionUsage.class, core = MyActionCore.class)
+public class MyActionUsage extends ActionMapUsage<MyActionCore> { ... }
+```
+
+`value` is a SysML metaclass (for example `ActionUsage`, `InvocationExpression`).
+
+## Rules for mapping classes
+
+* Exactly one public constructor `(SysML type, Mapper)`. The SysML type decides which elements the class accepts.
+* `core` must be a concrete class and must fit the type parameter `C` of the class. The parser sets the core right after construction.
+* The type parameter `D` of a usage (its definition) must have exactly one bound.
+* Annotations are not inherited. A class without an annotation is invisible to the parser.
+
+## Predefined classes
+
+`Model.Predefined` contains abstract templates without annotations, for example `ActionMapUsage`, `AssignmentMapUsage`, `ForLoopMapUsage`, `FeatureReferenceUsage`, `LiteralIntegerUsage`. They only become active once you write an annotated subclass.
+
+Slots are filled in protected `mapXxx()` methods, and the getters return wildcard types. In your subclass you override both and narrow the type:
+
+```java
+@Override
+protected List<? extends Usage<?, ?, ?>> mapTarget() {
+    return mapper.mapSlot("target", this, MyAttributeUsage.class);
+}
+
+@Override
+public MyAttributeUsage getTarget() {
+    return MyAttributeUsage.class.cast(super.getTarget());
+}
+```
+
+The cast in the getter is safe because `mapTarget` only returns that type.
+
+# Resolution rules
+
+For each element the parser looks for a class in this order:
+
+1. **Library type.** The most specific library type the element specializes that has a class. If the constructor of that class does not accept the element, the parser moves on to the next parent library type.
+2. **Metaclass.** If no library type fits, the most specific mapped metaclass the element is an instance of is used.
+3. **Nothing.** The element stays unmapped and is reported by `CheckUnMappedElements`.
+
+## Subclass wins
+
+If two classes share the same key (same metaclass, or same `libraryName` and same kind, definition or usage):
+
+* If one is a subclass of the other, the subclass replaces the parent class. This lets another library extend an existing mapping.
+* If they are unrelated, the scan fails with an error.
+
+## Warning: metaclasses are broad
+
+Many SysML metaclasses inherit from each other. A mapping on a general metaclass also catches every subtype that has no mapping of its own. Examples:
+
+* `ActionUsage` also catches `CalculationUsage`, `PerformActionUsage`, `SendActionUsage`, `AcceptActionUsage`, control nodes, `StateUsage`, `FlowUsage` and case usages.
+* `BooleanExpression` also catches `ConstraintUsage`, `RequirementUsage` and invariants.
+* `Function` also catches `CalculationDefinition`, `ConstraintDefinition`, `RequirementDefinition` and case definitions.
+* `InvocationExpression` also catches `OperatorExpression`, `IndexExpression`, `SelectExpression`, `CollectExpression`.
+
+That is why every fallback to a supertype is logged (see Logging).
+
+# Startup checks
+
+The scan throws if:
+
+* a class has more than one annotation or does not extend `AbstractType`,
+* the constructor `(SysML type, Mapper)` is missing,
+* `core` is abstract or does not fit `C`,
+* the `libraryName` does not exist in the library,
+* two unrelated classes share the same key,
+* the definition `D` of a library usage does not fit the definition class of its library type,
+* the definition `D` of a metaclass usage is not met by any mapped definition class.
+
+At runtime `Usage.fillSlots` checks that the definition given in the model was mapped as `D`, and throws with the element name otherwise.
+
+# Rules (Executor)
+
+Rules run in two stages inside `parse`:
+
+* `GenerelRules` run before mapping, on the SysML model. They throw `IllegalArgumentException`.
+* `SemanticRule` run after mapping, on the `ResultConverter`. They throw `SemanticException`.
+
+Predefined in `DefaultRuleExecutor`:
+
+* **MultiplicityRule:** a specialization must not violate the multiplicity of the inherited feature.
+* **MultiType:** all typings of an element must be compatible with each other (except `Flow`).
+* **CheckUnMappedElements:** reports input elements that have no mapping class.
+
+## Custom rules
+
+Extend `DefaultRuleExecutor` to keep the predefined rules, and pass the executor to `SysmlConverterMain`:
+
+```java
+public class MyExecutor extends DefaultRuleExecutor {
+    @Override
+    public List<SemanticRule> getSemanticRules(NewUtil newUtil) {
+        return List.of(new MyRule(newUtil));
+    }
+}
+
+SysmlConverterMain main = new SysmlConverterMain("MyLibrary.zip", new MyExecutor());
+```
+
+To add to the predefined general rules, call `super.getGeneralRules(newUtil)` in `getGeneralRules` and append yours. If you extend `Executor` directly, only your rules run.
+
+# Custom mapper
+
+`Mapper` can be extended, for example to change `idCalculation` or `isOwnedBy`. A new mapper is created for every `parse` through the protected method `getMapper()`:
+
+```java
+public class MyConverterMain extends SysmlConverterMain {
+    public MyConverterMain() throws IOException { super("MyLibrary.zip", new MyExecutor()); }
+
+    @Override
+    protected Mapper getMapper() { return new MyMapper(scanner, newUtil); }
+}
+```
+
+# Logging
+
+The parser logs through SLF4J with Log4j2 and sets the logger `Mapper` to INFO by itself. You do not have to configure anything.
+
+* **INFO:** a library type has no matching class, so the class of a parent library type is used.
+* **WARN:** an element has no class of its own and is mapped through a more general metaclass.
+
+Each combination is logged only once. To see more, change the level in your own `log4j2.xml`, for example `DEBUG` to see every mapping found during the scan.

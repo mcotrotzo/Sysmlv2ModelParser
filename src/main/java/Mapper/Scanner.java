@@ -270,7 +270,7 @@ public class Scanner {
 			if (skipped == used || !skipped.isSpecilizedBy(element) || !skipped.specialices(used)) continue;
 			String kind = element.eClass().getName();
 			if (loggedFallbacks.add(skipped.getLibraryName() + "|" + kind + "|" + used.getLibraryName())) {
-				log.info("'{}' ({}): {} has no class for it, using {}", element.getName(), kind, skipped.getLibraryName(), used.getLibraryName());
+				log.info("'{}' ({}): {} has no class for it, using {}", element.path(), kind, skipped.getLibraryName(), used.getLibraryName());
 			}
 		}
 	}
@@ -280,7 +280,7 @@ public class Scanner {
 		Class<?> exact = element.eClass().getInstanceClass();
 		if (exact == used.getMetaclass()) return;
 		if (loggedFallbacks.add(exact.getName() + "|" + used.getMetaclass().getName())) {
-			log.warn("'{}' is a {}, no class is mapped for it, using supertype {} -> {}", element.getName(), exact.getSimpleName(), used.getMetaclass().getSimpleName(), used.getMappedClass().getSimpleName());
+			log.warn("'{}' is a {}, no class is mapped for it, using supertype {} -> {}", element.path(), exact.getSimpleName(), used.getMetaclass().getSimpleName(), used.getMappedClass().getSimpleName());
 		}
 	}
 
