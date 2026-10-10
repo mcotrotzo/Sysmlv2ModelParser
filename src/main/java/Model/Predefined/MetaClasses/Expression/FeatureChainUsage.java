@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.EmptyCore;
 import Model.Usage;
 import org.omg.sysml.lang.sysml.Feature;
@@ -11,8 +10,8 @@ import org.omg.sysml.lang.sysml.FeatureReferenceExpression;
 import java.util.ArrayList;
 import java.util.List;
 
-@MappedMetaClass(value = FeatureChainExpression.class, core = EmptyCore.class)
-public class FeatureChainUsage extends ReferenceUsage<FeatureChainExpression> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = FeatureChainExpression.class, core = EmptyCore.class)
+public abstract class FeatureChainUsage extends ReferenceUsage<FeatureChainExpression> {
 
 
 

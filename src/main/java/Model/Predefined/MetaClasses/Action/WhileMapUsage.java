@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Predefined.MetaClasses.Expression.ExpressionUsage;
 import Model.Slots;
 import lombok.Getter;
@@ -10,12 +9,12 @@ import org.omg.sysml.lang.sysml.WhileLoopActionUsage;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = WhileLoopActionUsage.class, core = EmptyActionCore.class)
-public class WhileMapUsage extends ActionMapUsage<EmptyActionCore, WhileLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = WhileLoopActionUsage.class, core = EmptyActionCore.class)
+public abstract class WhileMapUsage extends ActionMapUsage<EmptyActionCore, WhileLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
-	@Getter private Optional<ExpressionUsage<?>> condition = Optional.empty();
-	@Getter private Optional<ExpressionUsage<?>> until = Optional.empty();
-	@Getter private Optional<ActionMapUsage<?, ?, ?>> body = Optional.empty();
+	@Getter protected Optional<? extends ExpressionUsage<?>> condition = Optional.empty();
+	@Getter protected Optional<? extends ExpressionUsage<?>> until = Optional.empty();
+	@Getter protected Optional<? extends ActionMapUsage<?, ?, ?>> body = Optional.empty();
 
 	public WhileMapUsage(WhileLoopActionUsage sysmlElement, Mapper mapper) {
 		super(sysmlElement,  mapper);

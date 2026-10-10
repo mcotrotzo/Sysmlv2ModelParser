@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Predefined.MetaClasses.Expression.ExpressionUsage;
 import Model.Slots;
 import Model.Usage;
@@ -11,12 +10,12 @@ import org.omg.sysml.lang.sysml.ForLoopActionUsage;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = ForLoopActionUsage.class, core = EmptyActionCore.class)
-public class ForLoopMapUsage extends ActionMapUsage<EmptyActionCore, ForLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = ForLoopActionUsage.class, core = EmptyActionCore.class)
+public abstract class ForLoopMapUsage extends ActionMapUsage<EmptyActionCore, ForLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
-	@Getter private Optional<Usage<?, ?,?>> loopVariable = Optional.empty();
-	@Getter private Optional<ExpressionUsage<?>> collection = Optional.empty();
-	@Getter private Optional<ActionMapUsage<?, ?, ?>> body = Optional.empty();
+	@Getter protected Optional<? extends Usage<?, ?,?>> loopVariable = Optional.empty();
+	@Getter protected Optional<? extends ExpressionUsage<?>> collection = Optional.empty();
+	@Getter protected Optional<? extends ActionMapUsage<?, ?, ?>> body = Optional.empty();
 
 	public ForLoopMapUsage(ForLoopActionUsage sysmlElement, Mapper newMappe) {
 		super(sysmlElement, newMappe);

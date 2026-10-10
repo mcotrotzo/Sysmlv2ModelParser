@@ -55,37 +55,13 @@ public class Scanner {
 					.filter(this::hasAnnotation)
 					.distinct()
 					.toList();
-			ScanMappedResult standardResult = new ScanMappedResult();
-			ScanMappedResult userResult = new ScanMappedResult();
-
+			// all mappings in one result; on conflicts the subclass wins (see setClass)
+			ScanMappedResult result = new ScanMappedResult();
 			for (ClassInfo classInfo : infos) {
-				if(classInfo.getPackageName().equals("Model.Predefined") || classInfo.getPackageName().startsWith("Model.Predefined.")) {
-					handle(classInfo, standardResult);
-				}
-				else {
-					handle(classInfo, userResult);
-				}
+				handle(classInfo, result);
 			}
-
-			standardinfos = standardResult.getStandardinfos();
-			metaclassinfos = standardResult.getMetaclassinfos();
-
-			for(var s: userResult.getStandardinfos().entrySet()){
-				if(!standardinfos.containsKey(s.getKey())){
-					standardinfos.put(s.getKey(), s.getValue());
-					continue;
-				}
-				MappedLibraryTypeInfo user = s.getValue();
-				if(user.getDefinitionClass().isPresent()){
-					standardinfos.get(s.getKey()).setClass(user.getDefinitionClass().get(), user.getDefinitionCore(), true);
-					log.info("Overriding definition class for library {} with {}", s.getKey(), user.getDefinitionClass().get().getName());
-				}
-				if(user.getUsageClass().isPresent()){
-					standardinfos.get(s.getKey()).setClass(user.getUsageClass().get(), user.getUsageCore(), true);
-					log.info("Overriding usage class for library {} with {}", s.getKey(), user.getUsageClass().get().getName());
-				}
-			}
-			metaclassinfos.putAll(userResult.getMetaclassinfos());
+			standardinfos = result.getStandardinfos();
+			metaclassinfos = result.getMetaclassinfos();
 
 			metaclassInfo = new MappedSort<MetaclassInfo<?>>(metaclassinfos.values());
 			mappedLibraryTypeInfos = new MappedSort<MappedLibraryTypeInfo>(standardinfos.values());
@@ -133,27 +109,25 @@ public class Scanner {
 
 		if(classInfo.hasAnnotation(MappedMetaClass.class)){
 			AnnotationParameterValueList values = classInfo.getAnnotationInfo(MappedMetaClass.class).getParameterValues();
-			MetaclassInfo metaclassInfo = new MetaclassInfo(getCastedClass(values.getValue("value")));
-			if(scanMappedResult.getMetaclassinfos().containsKey(metaclassInfo.getMetaclass())){
-				throw new IllegalStateException("Duplicate metaclass mapping for %s: %s and %s".formatted(metaclassInfo.getMetaclass().getName(), scanMappedResult.getMetaclassinfos().get(metaclassInfo.getMetaclass()).getMappedClass().getSimpleName(), classInfo.getName()));
-			}
+			Class<? extends Type> metaclass = getCastedClass(values.getValue("value"));
+			MetaclassInfo<?> metaclassInfo = scanMappedResult.getMetaclassinfos().computeIfAbsent(metaclass, MetaclassInfo::new);
 			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
 			metaclassInfo.setClass(mappedClass, core);
-			scanMappedResult.getMetaclassinfos().put(metaclassInfo.getMetaclass(), metaclassInfo);
 			log.info("Found metaclass mapping: {} -> {} (core {})", classInfo.getName(), metaclassInfo.getMetaclass().getName(), core.getSimpleName());
 		}
 
 		if(classInfo.hasAnnotation(MappedLibrary.class)){
 			AnnotationParameterValueList values = classInfo.getAnnotationInfo(MappedLibrary.class).getParameterValues();
+			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
 			String libraryName = values.getValue("libraryName").toString();
 			MappedLibraryTypeInfo mappedLibraryInfo = scanMappedResult.getStandardinfos()
 					.computeIfAbsent(libraryName, name -> new MappedLibraryTypeInfo(newUtil, name));
-			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
 			mappedLibraryInfo.setClass(mappedClass, core);
 			log.info("Found library mapping: {} -> {} (core {})", classInfo.getName(), libraryName, core.getSimpleName());
 		}
 	}
 
+	// loads the core named in the annotation and checks that it fits the core type parameter of the mapped class
 	private Class<? extends Core<?>> getCoreClass(Object value, Class<?> mappedClass) {
 		if (!(value instanceof AnnotationClassRef ref) || !Core.class.isAssignableFrom(ref.loadClass())) {
 			throw new IllegalStateException("Class %s: 'core' must name a subclass of Core".formatted(mappedClass.getName()));
@@ -171,11 +145,12 @@ public class Scanner {
 		return core;
 	}
 
+	// resolves the core type parameter of AbstractType for the given class; type variables yield their bounds
 	private List<Class<?>> requiredCoreTypes(Class<?> mappedClass) {
 		return resolveTypeArgument(mappedClass, AbstractType.class, 1);
 	}
 
-
+	// definition type a usage class accepts, read from the D parameter of Usage
 	public Class<?> requiredDefinitionType(Class<?> usageClass) {
 		return definitionTypes.computeIfAbsent(usageClass, c -> {
 			List<Class<?>> types = resolveTypeArgument(c, Usage.class, 2);
@@ -186,7 +161,7 @@ public class Scanner {
 		});
 	}
 
-
+	// resolves type parameter `index` of `base` as seen from `clazz`
 	private List<Class<?>> resolveTypeArgument(Class<?> clazz, Class<?> base, int index) {
 		Map<TypeVariable<?>, java.lang.reflect.Type> bindings = new HashMap<>();
 		Class<?> current = clazz;
@@ -206,6 +181,7 @@ public class Scanner {
 		return erasures(bindings.get(base.getTypeParameters()[index]));
 	}
 
+	// a metaclass usage has no fixed library type, so its D must at least be met by one mapped definition class
 	private void checkMetaclassDefinitionTypes() {
 		List<Class<?>> definitionClasses = new ArrayList<>();
 		standardinfos.values().forEach(info -> info.getDefinitionClass().ifPresent(definitionClasses::add));
@@ -223,7 +199,7 @@ public class Scanner {
 		}
 	}
 
-
+	// every usage class must accept the definition class built for its library type
 	private void checkDefinitionTypes() {
 		checkMetaclassDefinitionTypes();
 		for (MappedLibraryTypeInfo info : standardinfos.values()) {
@@ -263,7 +239,7 @@ public class Scanner {
 
 
 	public <T extends AbstractType<?,?>,C extends Type> Optional<T> getMappedClass(C element,Mapper mapper,Class<T>clazz) {
-
+		// library types are preferred; metaclass mappings are the fallback
 		Optional<AbstractType<?, ?>> created = mappedLibraryTypeInfos.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper))
 				.or(() -> metaclassInfo.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper)));
 		return created.map(clazz::cast);

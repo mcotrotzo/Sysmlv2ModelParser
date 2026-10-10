@@ -11,6 +11,7 @@ import java.util.Set;
 
 public class ReadManagerTwo {
 
+	// extracts a zip from the classpath (e.g. "DTLibrary.zip") into a temporary directory
 	public static Path extractStandardLibrary(String zipResourceName) throws IOException {
 		Path tempDirectory = Files.createTempDirectory(zipResourceName.replace(".zip", "") + "_temp");
 		try (var input = ReadManagerTwo.class.getClassLoader().getResourceAsStream(zipResourceName)) {

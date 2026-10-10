@@ -12,7 +12,7 @@ import java.util.List;
 
 public abstract class InvocationUsage<U extends InstantiationExpression> extends ExpressionUsage<U> {
 
-	@Getter private List<ExpressionUsage<?>> arguments = List.of();
+	@Getter protected List<? extends ExpressionUsage<?>> arguments = List.of();
 
 	protected InvocationUsage(U sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

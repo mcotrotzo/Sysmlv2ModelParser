@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Predefined.MetaClasses.Expression.ExpressionUsage;
 import Model.Slots;
 import lombok.Getter;
@@ -12,13 +11,13 @@ import java.util.List;
 import java.util.Optional;
 
 
-@MappedMetaClass(value = TransitionUsage.class, core = EmptyActionCore.class)
-public class TransitionMapUsage extends ActionMapUsage<EmptyActionCore, TransitionUsage, ActionMapDefinition<EmptyActionCore>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = TransitionUsage.class, core = EmptyActionCore.class)
+public abstract class TransitionMapUsage extends ActionMapUsage<EmptyActionCore, TransitionUsage, ActionMapDefinition<EmptyActionCore>> {
 
-	@Getter private List<ExpressionUsage<?>> guard = List.of();
-	@Getter private Optional<ActionMapUsage<?, ?, ?>> effectAction = Optional.empty();
-	@Getter private ActionMapUsage<?, ?, ?> source;
-	@Getter private ActionMapUsage<?, ?, ?> target;
+	@Getter protected List<? extends ExpressionUsage<?>> guard = List.of();
+	@Getter protected Optional<? extends ActionMapUsage<?, ?, ?>> effectAction = Optional.empty();
+	@Getter protected ActionMapUsage<?, ?, ?> source;
+	@Getter protected ActionMapUsage<?, ?, ?> target;
 
 
 	public TransitionMapUsage(TransitionUsage sysmlElement, Mapper mapper) {

@@ -11,7 +11,7 @@ import org.omg.sysml.lang.sysml.Type;
 public class FunctionCore extends ActionCore {
 
 	@Getter
-	private FunctionKind functionKind;
+	protected FunctionKind functionKind;
 
 	public FunctionCore(Type sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Predefined.MetaClasses.Expression.ExpressionUsage;
 import Model.Slots;
 import lombok.Getter;
@@ -11,12 +10,12 @@ import org.omg.sysml.lang.sysml.IfActionUsage;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = IfActionUsage.class, core = EmptyActionCore.class)
-public class IfElseMapUsage extends ActionMapUsage<EmptyActionCore, IfActionUsage, ActionMapDefinition<EmptyActionCore>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = IfActionUsage.class, core = EmptyActionCore.class)
+public abstract class IfElseMapUsage extends ActionMapUsage<EmptyActionCore, IfActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
-	@Getter private Optional<ExpressionUsage<?>> condition = Optional.empty();
-	@Getter private Optional<ActionMapUsage<?, ?, ?>> thenAction = Optional.empty();
-	@Getter private Optional<ActionMapUsage<?, ?, ?>> elseAction = Optional.empty();
+	@Getter protected Optional<? extends ExpressionUsage<?>> condition = Optional.empty();
+	@Getter protected Optional<? extends ActionMapUsage<?, ?, ?>> thenAction = Optional.empty();
+	@Getter protected Optional<? extends ActionMapUsage<?, ?, ?>> elseAction = Optional.empty();
 
 	public IfElseMapUsage(IfActionUsage sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

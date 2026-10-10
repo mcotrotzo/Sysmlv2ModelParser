@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Predefined.MetaClasses.Expression.ExpressionUsage;
 import Model.Slots;
 import Model.Usage;
@@ -12,13 +11,13 @@ import org.omg.sysml.lang.sysml.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@MappedMetaClass(value = AssignmentActionUsage.class, core = EmptyActionCore.class)
-public class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,AssignmentActionUsage,ActionMapDefinition<EmptyActionCore>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = AssignmentActionUsage.class, core = EmptyActionCore.class)
+public abstract class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,AssignmentActionUsage,ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter
-	private Usage<?, ?, ?> referent;
+	protected Usage<?, ?, ?> referent;
 	@Getter
-	private ExpressionUsage<?> value;
+	protected ExpressionUsage<?> value;
 
 	public AssignmentMapUsage(AssignmentActionUsage sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);
@@ -33,7 +32,8 @@ public class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,Assignmen
 	}
 
 
-	public void mapReferent() {
+	// chain from the assignment target to the assigned feature
+	protected List<Feature> referentChain() {
 		Expression ta = sysmlElement.getTargetArgument();
 		List<Feature> chain = new ArrayList<>();
 		if (ta instanceof FeatureReferenceExpression r) {
@@ -47,9 +47,14 @@ public class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,Assignmen
 		}
 		Feature ref = sysmlElement.getReferent();
 		chain.addAll(ref.getChainingFeature().isEmpty() ? List.of(ref) : ref.getChainingFeature());
-		referent = instance.mapChain(chain, this, Usage.class);
+		return chain;
 	}
-	public void mapValue()
+
+	protected void mapReferent() {
+		referent = instance.mapChain(referentChain(), this, Usage.class);
+	}
+
+	protected void mapValue()
 	{
 		value = Slots.mapAll(instance, this, List.of(sysmlElement.getValueExpression()), ExpressionUsage.class).getFirst();
 

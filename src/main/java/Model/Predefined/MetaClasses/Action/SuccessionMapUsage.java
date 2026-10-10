@@ -1,7 +1,6 @@
 package Model.Predefined.MetaClasses.Action;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.Definition;
 import Model.EmptyCore;
 import Model.Usage;
@@ -12,10 +11,10 @@ import org.omg.sysml.lang.sysml.SuccessionAsUsage;
 import java.util.ArrayList;
 import java.util.List;
 
-@MappedMetaClass(value = SuccessionAsUsage.class, core = EmptyCore.class)
-public class SuccessionMapUsage extends Usage<EmptyCore, SuccessionAsUsage, Definition<?,?>> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = SuccessionAsUsage.class, core = EmptyCore.class)
+public abstract class SuccessionMapUsage extends Usage<EmptyCore, SuccessionAsUsage, Definition<?,?>> {
 
-	@Getter private List<ActionMapUsage<?, ?, ?>> targets = new ArrayList<>();
+	@Getter protected List<? extends ActionMapUsage<?, ?, ?>> targets = List.of();
 	public SuccessionMapUsage(SuccessionAsUsage sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);
 	}
@@ -28,9 +27,11 @@ public class SuccessionMapUsage extends Usage<EmptyCore, SuccessionAsUsage, Defi
 	}
 
 	protected void mapTargets(){
-		targets.add(instance.mapChain(List.of(sysmlElement.getSourceFeature()), this, ActionMapUsage.class));
+		List<ActionMapUsage<?, ?, ?>> mapped = new ArrayList<>();
+		mapped.add(instance.mapChain(List.of(sysmlElement.getSourceFeature()), this, ActionMapUsage.class));
 		for (Feature target : sysmlElement.getTargetFeature()) {
-			targets.add(instance.mapChain(List.of(target), this, ActionMapUsage.class));
+			mapped.add(instance.mapChain(List.of(target), this, ActionMapUsage.class));
 		}
+		targets = mapped;
 	}
 }

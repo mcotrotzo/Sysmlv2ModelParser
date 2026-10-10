@@ -14,9 +14,10 @@ public class MetaclassInfo<T extends Type> implements MappedComprable<T, Metacla
 		this.metaclass = metaclass;
 	}
 
+	// true if this metaclass is a subtype of the other one (same direction as MappedLibraryTypeInfo)
 	@Override
 	public boolean specialices(MetaclassInfo<?> other) {
-		return metaclass.isAssignableFrom(other.getMetaclass());
+		return other.getMetaclass().isAssignableFrom(metaclass);
 	}
 
 	@Override
@@ -26,7 +27,7 @@ public class MetaclassInfo<T extends Type> implements MappedComprable<T, Metacla
 
 	@Override
 	public boolean canCreate(Type element) {
-		return mappedClass != null;
+		return mappedClass != null && accepts(mappedClass, element);
 	}
 
 	@Override
@@ -34,9 +35,11 @@ public class MetaclassInfo<T extends Type> implements MappedComprable<T, Metacla
 		return instantiate(mappedClass, core, element, mapper);
 	}
 
+	// a subclass of the mapped class replaces it; unrelated classes for the same metaclass are ambiguous
 	public void setClass(Class<? extends AbstractType<?, ?>> aClass, Class<? extends Core<?>> core) {
-		if (mappedClass != null) {
-			throw new IllegalStateException("Metaclass %s is already mapped to %s".formatted(metaclass.getSimpleName(), mappedClass.getName()));
+		if (mappedClass != null && !mappedClass.isAssignableFrom(aClass)) {
+			if (aClass.isAssignableFrom(mappedClass)) return;
+			throw new IllegalStateException("Metaclass %s is mapped by unrelated classes %s and %s".formatted(metaclass.getSimpleName(), mappedClass.getName(), aClass.getName()));
 		}
 		this.mappedClass = aClass;
 		this.core = core;

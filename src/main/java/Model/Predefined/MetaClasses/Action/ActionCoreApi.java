@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface ActionCoreApi<C extends ActionCore> extends CoreApi<C> {
 
-	default List<Usage<?, ?,?>> getInputs() { return getCore().getInputs(); }
-	default List<Usage<?, ?,?>> getOutputs() { return getCore().getOutputs(); }
-	default List<ActionMapUsage<?, ?, ?>> getActions() { return getCore().getActions(); }
-	default List<SuccessionMapUsage> getSuccessions() { return getCore().getSuccessions(); }
+	default List<? extends Usage<?, ?,?>> getInputs() { return getCore().getInputs(); }
+	default List<? extends Usage<?, ?,?>> getOutputs() { return getCore().getOutputs(); }
+	default List<? extends ActionMapUsage<?, ?, ?>> getActions() { return getCore().getActions(); }
+	default List<? extends SuccessionMapUsage> getSuccessions() { return getCore().getSuccessions(); }
 }

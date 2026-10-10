@@ -2,15 +2,14 @@ package Model.Predefined.MetaClasses.Expression;
 
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.EmptyCore;
 import Model.Usage;
 import org.omg.sysml.lang.sysml.FeatureReferenceExpression;
 
 import java.util.List;
 
-@MappedMetaClass(value = FeatureReferenceExpression.class, core = EmptyCore.class)
-public class FeatureReferenceUsage extends ReferenceUsage<FeatureReferenceExpression> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = FeatureReferenceExpression.class, core = EmptyCore.class)
+public abstract class FeatureReferenceUsage extends ReferenceUsage<FeatureReferenceExpression> {
 
 
 

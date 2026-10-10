@@ -13,6 +13,7 @@ import java.util.UUID;
 
 public abstract class AbstractType<T extends org.omg.sysml.lang.sysml.Type, C extends Core<? super T>> implements CoreApi<C> {
 
+	// set by the parser right after construction, from the core named in the mapping annotation
 	private C core;
 
 

@@ -33,6 +33,10 @@ public interface MappedComprable<T extends Type, C extends MappedComprable<?, C>
 		}
 	}
 
+	default boolean accepts(Class<?> aClass, Type element) {
+		return Arrays.stream(aClass.getConstructors())
+				.anyMatch(x -> x.getParameterCount() == 2 && x.getParameterTypes()[0].isInstance(element) && x.getParameterTypes()[1].isAssignableFrom(Mapper.class));
+	}
 
 	default Constructor<?> findConstructor(Class<?> aClass, Class<? extends Type> elementClass) {
 		List<Constructor<?>> valid = Arrays.stream(aClass.getConstructors())

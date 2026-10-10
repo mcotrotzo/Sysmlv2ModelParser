@@ -13,10 +13,10 @@ import java.util.List;
 
 public class ActionCore extends Core<Type> {
 
-	@Getter private List<Usage<?, ?,?>> inputs = new ArrayList<>();
-	@Getter private List<Usage<?, ?,?>> outputs = new ArrayList<>();
-	@Getter private List<ActionMapUsage<?, ?, ?>> actions = List.of();
-	@Getter private List<SuccessionMapUsage> successions = List.of();
+	@Getter protected List<? extends Usage<?, ?,?>> inputs = new ArrayList<>();
+	@Getter protected List<? extends Usage<?, ?,?>> outputs = new ArrayList<>();
+	@Getter protected List<? extends ActionMapUsage<?, ?, ?>> actions = List.of();
+	@Getter protected List<? extends SuccessionMapUsage> successions = List.of();
 
 	public ActionCore(Type sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

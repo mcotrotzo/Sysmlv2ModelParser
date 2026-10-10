@@ -28,28 +28,29 @@ public class MappedLibraryTypeInfo implements MappedComprable<Type, MappedLibrar
 		}
 	}
 
-	public void setClass(Class<? extends AbstractType<?, ?>> mappedClass, Class<? extends Core<?>> core, boolean override) {
+	// a subclass of the mapped class replaces it; unrelated classes for the same library type are ambiguous
+	public void setClass(Class<? extends AbstractType<?, ?>> mappedClass, Class<? extends Core<?>> core) {
 		if (Definition.class.isAssignableFrom(mappedClass)) {
-			if (definitionClass.isPresent() && !override) {
-				throw new IllegalStateException("Library type %s has two definition classes: %s and %s".formatted(libraryName, definitionClass.get().getName(), mappedClass.getName()));
+			if (replaces(definitionClass, mappedClass, "definition")) {
+				definitionClass = Optional.of(mappedClass);
+				definitionCore = core;
 			}
-			definitionClass = Optional.of(mappedClass);
-			definitionCore = core;
 			return;
 		}
 		if (Usage.class.isAssignableFrom(mappedClass)) {
-			if (usageClass.isPresent() && !override) {
-				throw new IllegalStateException("Library type %s has two usage classes: %s and %s".formatted(libraryName, usageClass.get().getName(), mappedClass.getName()));
+			if (replaces(usageClass, mappedClass, "usage")) {
+				usageClass = Optional.of(mappedClass);
+				usageCore = core;
 			}
-			usageClass = Optional.of(mappedClass);
-			usageCore = core;
 			return;
 		}
 		throw new IllegalStateException("Class %s is not a subclass of Definition or Usage".formatted(mappedClass.getName()));
 	}
 
-	public void setClass(Class<? extends AbstractType<?, ?>> mappedClass, Class<? extends Core<?>> core) {
-		setClass(mappedClass, core, false);
+	private boolean replaces(Optional<Class<? extends AbstractType<?, ?>>> current, Class<?> candidate, String kind) {
+		if (current.isEmpty() || current.get().isAssignableFrom(candidate)) return true;
+		if (candidate.isAssignableFrom(current.get())) return false;
+		throw new IllegalStateException("Library type %s has unrelated %s classes %s and %s".formatted(libraryName, kind, current.get().getName(), candidate.getName()));
 	}
 
 	@Override
@@ -64,8 +65,8 @@ public class MappedLibraryTypeInfo implements MappedComprable<Type, MappedLibrar
 
 	@Override
 	public boolean canCreate(Type element) {
-		if (element instanceof Classifier) return definitionClass.isPresent();
-		if (element instanceof Feature) return usageClass.isPresent();
+		if (element instanceof Classifier) return definitionClass.filter(c -> accepts(c, element)).isPresent();
+		if (element instanceof Feature) return usageClass.filter(c -> accepts(c, element)).isPresent();
 		return false;
 	}
 

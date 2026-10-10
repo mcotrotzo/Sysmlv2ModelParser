@@ -1,17 +1,16 @@
 package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
-import Model.Annotation.MappedMetaClass;
 import Model.EmptyCore;
 import Model.Predefined.MetaClasses.Function.FunctionDefinition;
 import lombok.Getter;
 
 import org.omg.sysml.lang.sysml.InvocationExpression;
 
-@MappedMetaClass(value = InvocationExpression.class, core = EmptyCore.class)
-public class CalculationUsage extends InvocationUsage<InvocationExpression> {
+// template: a library maps it by a subclass annotated with @MappedMetaClass(value = InvocationExpression.class, core = EmptyCore.class)
+public abstract class CalculationUsage extends InvocationUsage<InvocationExpression> {
 
-	@Getter private FunctionDefinition<?> invokeType;
+	@Getter protected FunctionDefinition<?> invokeType;
 
 	public CalculationUsage(InvocationExpression sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

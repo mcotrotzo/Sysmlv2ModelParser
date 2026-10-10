@@ -23,6 +23,7 @@ import java.util.*;
 public class SysmlConverterMain {
 
 	private static final String STANDARD_LIBRARY_ZIP = "sysml_library.zip";
+	// zip of the domain library on the classpath, given by the project that uses the parser
 	private final String libraryZip;
 	private final Map<URI, Resource> uriToResourceMap = new HashMap<>();
 	private SysMLInteractive sysMLInteractive;
