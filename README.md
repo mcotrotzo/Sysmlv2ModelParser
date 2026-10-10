@@ -10,7 +10,7 @@ Principle: only elements that have a class are mapped. Elements without a matchi
 <dependency>
     <groupId>org.example</groupId>
     <artifactId>sysml-library-mapper</artifactId>
-    <version>0.0.5</version>
+    <version>GITHUB-release version</version>
 </dependency>
 ```
 
