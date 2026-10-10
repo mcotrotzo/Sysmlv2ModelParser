@@ -3,9 +3,10 @@ package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
 import Model.Annotation.MappedMetaClass;
+import Model.EmptyCore;
 import org.omg.sysml.lang.sysml.LiteralBoolean;
 import org.omg.sysml.lang.sysml.LiteralRational;
-@MappedMetaClass(value = LiteralRational.class)
+@MappedMetaClass(value = LiteralRational.class, core = EmptyCore.class)
 public class LiteralRealUsage extends LiteralUsage<Double> {
 	public LiteralRealUsage(LiteralRational sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

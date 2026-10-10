@@ -9,10 +9,9 @@ import lombok.Getter;
 import org.omg.sysml.lang.sysml.ForLoopActionUsage;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = ForLoopActionUsage.class)
+@MappedMetaClass(value = ForLoopActionUsage.class, core = EmptyActionCore.class)
 public class ForLoopMapUsage extends ActionMapUsage<EmptyActionCore, ForLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter private Optional<Usage<?, ?,?>> loopVariable = Optional.empty();
@@ -41,10 +40,5 @@ public class ForLoopMapUsage extends ActionMapUsage<EmptyActionCore, ForLoopActi
 
 	protected void mapBody() {
 		body = Slots.mapAll(instance, this, Stream.ofNullable(sysmlElement.getBodyAction()).toList(), Slots.<ActionMapUsage<?, ?, ?>>rawClassOf(ActionMapUsage.class)).stream().findFirst();
-	}
-
-	@Override
-	protected Supplier<EmptyActionCore> getCoreFactory() {
-		return () -> new EmptyActionCore(sysmlElement, instance);
 	}
 }

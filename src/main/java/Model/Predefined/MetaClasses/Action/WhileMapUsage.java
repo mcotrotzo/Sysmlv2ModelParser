@@ -8,10 +8,9 @@ import lombok.Getter;
 import org.omg.sysml.lang.sysml.WhileLoopActionUsage;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = WhileLoopActionUsage.class)
+@MappedMetaClass(value = WhileLoopActionUsage.class, core = EmptyActionCore.class)
 public class WhileMapUsage extends ActionMapUsage<EmptyActionCore, WhileLoopActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter private Optional<ExpressionUsage<?>> condition = Optional.empty();
@@ -43,10 +42,5 @@ public class WhileMapUsage extends ActionMapUsage<EmptyActionCore, WhileLoopActi
 	protected void mapUntil() {
 		until = Slots.mapAll(instance, this, Stream.ofNullable(sysmlElement.getUntilArgument()).toList(), Slots.<ExpressionUsage<?>>rawClassOf(ExpressionUsage.class)).stream().findFirst();
 
-	}
-
-	@Override
-	protected Supplier<EmptyActionCore> getCoreFactory() {
-		return () -> new EmptyActionCore(sysmlElement, instance);
 	}
 }

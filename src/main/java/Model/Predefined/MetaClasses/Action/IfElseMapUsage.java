@@ -9,10 +9,9 @@ import lombok.Getter;
 import org.omg.sysml.lang.sysml.IfActionUsage;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@MappedMetaClass(value = IfActionUsage.class)
+@MappedMetaClass(value = IfActionUsage.class, core = EmptyActionCore.class)
 public class IfElseMapUsage extends ActionMapUsage<EmptyActionCore, IfActionUsage, ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter private Optional<ExpressionUsage<?>> condition = Optional.empty();
@@ -29,11 +28,6 @@ public class IfElseMapUsage extends ActionMapUsage<EmptyActionCore, IfActionUsag
 		mapCondition();
 		mapThenAction();
 		mapElseAction();
-	}
-
-	@Override
-	protected Supplier<EmptyActionCore> getCoreFactory() {
-		return () -> new EmptyActionCore(sysmlElement, instance);
 	}
 
 	protected void mapCondition() {

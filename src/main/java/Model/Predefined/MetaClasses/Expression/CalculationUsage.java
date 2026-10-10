@@ -2,12 +2,13 @@ package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
 import Model.Annotation.MappedMetaClass;
+import Model.EmptyCore;
 import Model.Predefined.MetaClasses.Function.FunctionDefinition;
 import lombok.Getter;
 
 import org.omg.sysml.lang.sysml.InvocationExpression;
 
-@MappedMetaClass(value = InvocationExpression.class)
+@MappedMetaClass(value = InvocationExpression.class, core = EmptyCore.class)
 public class CalculationUsage extends InvocationUsage<InvocationExpression> {
 
 	@Getter private FunctionDefinition<?> invokeType;

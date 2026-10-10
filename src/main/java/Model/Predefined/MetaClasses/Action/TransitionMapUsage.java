@@ -10,10 +10,9 @@ import org.omg.sysml.lang.sysml.TransitionUsage;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 
-@MappedMetaClass(value = TransitionUsage.class)
+@MappedMetaClass(value = TransitionUsage.class, core = EmptyActionCore.class)
 public class TransitionMapUsage extends ActionMapUsage<EmptyActionCore, TransitionUsage, ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter private List<ExpressionUsage<?>> guard = List.of();
@@ -51,11 +50,6 @@ public class TransitionMapUsage extends ActionMapUsage<EmptyActionCore, Transiti
 
 	protected  void mapTarget() {
 		target = instance.mapChain(List.of(sysmlElement.getTarget()), this, ActionMapUsage.class);
-	}
-
-	@Override
-	protected Supplier<EmptyActionCore> getCoreFactory() {
-		return () -> new EmptyActionCore(sysmlElement, instance);
 	}
 
 }

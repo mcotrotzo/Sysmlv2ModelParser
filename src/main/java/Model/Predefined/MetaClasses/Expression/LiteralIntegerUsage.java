@@ -3,9 +3,10 @@ package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
 import Model.Annotation.MappedMetaClass;
+import Model.EmptyCore;
 import org.omg.sysml.lang.sysml.LiteralBoolean;
 import org.omg.sysml.lang.sysml.LiteralInteger;
-@MappedMetaClass(value = LiteralInteger.class)
+@MappedMetaClass(value = LiteralInteger.class, core = EmptyCore.class)
 public class LiteralIntegerUsage extends LiteralUsage<Integer> {
 	public LiteralIntegerUsage(LiteralInteger sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);

@@ -45,7 +45,7 @@ public class MappedSort<T extends MappedComprable<?,T>> {
 		List<T> hits = new ArrayList<>();
 		Set<T> covered = new HashSet<>();
 		for (T node : sortedNodes) {
-			if(covered.contains(node) || !node.isSpecilizedBy(element)){
+			if(covered.contains(node) || !node.isSpecilizedBy(element) || !node.canCreate(element)){
 				continue;
 			}
 

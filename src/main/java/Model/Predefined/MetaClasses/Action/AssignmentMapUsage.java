@@ -11,9 +11,8 @@ import org.omg.sysml.lang.sysml.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
-@MappedMetaClass(value = AssignmentActionUsage.class)
+@MappedMetaClass(value = AssignmentActionUsage.class, core = EmptyActionCore.class)
 public class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,AssignmentActionUsage,ActionMapDefinition<EmptyActionCore>> {
 
 	@Getter
@@ -31,11 +30,6 @@ public class AssignmentMapUsage extends ActionMapUsage<EmptyActionCore,Assignmen
 		mapReferent();
 		mapValue();
 
-	}
-
-	@Override
-	protected Supplier<EmptyActionCore> getCoreFactory() {
-		return () -> new EmptyActionCore(sysmlElement, instance);
 	}
 
 

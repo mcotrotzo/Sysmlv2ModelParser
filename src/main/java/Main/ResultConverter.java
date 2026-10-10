@@ -3,19 +3,17 @@ package Main;
 
 
 import Model.AbstractType;
+import lombok.Getter;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public class ResultConverter {
 	private TwinDataBase twinDataBase;
 	public ResultConverter(TwinDataBase twinDataBase) {
 		this.twinDataBase = twinDataBase;
-	}
-
-	public TwinDataBase getTwinDataBase() {
-		return twinDataBase;
 	}
 
 

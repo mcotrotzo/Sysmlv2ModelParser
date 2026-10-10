@@ -22,9 +22,8 @@ import java.util.*;
 
 public class SysmlConverterMain {
 
-	private static final String STANDARD_LIBRARY_NAME= "sysml_library";
-	private static final String DT_L_NAME = "DTLibrary";
-	private String DT_PATH;
+	private static final String STANDARD_LIBRARY_ZIP = "sysml_library.zip";
+	private final String libraryZip;
 	private final Map<URI, Resource> uriToResourceMap = new HashMap<>();
 	private SysMLInteractive sysMLInteractive;
 	private ResultConverter result;
@@ -33,19 +32,21 @@ public class SysmlConverterMain {
 	private Executor executor = new DefaultRuleExecutor();
 	protected NewUtil newUtil;
 
-	public SysmlConverterMain(Executor executor) throws IOException {
+	public SysmlConverterMain(String libraryZip, Executor executor) throws IOException {
+		this.libraryZip = libraryZip;
 		this.executor = executor;
 		init();
 	}
 
-	public SysmlConverterMain() throws IOException {
+	public SysmlConverterMain(String libraryZip) throws IOException {
+		this.libraryZip = libraryZip;
 		init();
 	}
 
 	private void init() throws IOException {
 		initSysMLInteractive();
 		initStandardLibrary();
-		initDTLibrary();
+		initLibrary();
 		newUtil = new NewUtil(new ResourceContainer(libraryResources, sysMLInteractive.getInputResources()));
 		scanner = new Scanner(newUtil);
 	}
@@ -54,12 +55,13 @@ public class SysmlConverterMain {
 		sysMLInteractive = SysMLInteractive.createInstance();
 	}
 	private void initStandardLibrary() throws IOException {
-		sysMLInteractive.loadLibrary(ReadManagerTwo.extractStandardLibrary(STANDARD_LIBRARY_NAME).toString());
+		sysMLInteractive.loadLibrary(ReadManagerTwo.extractStandardLibrary(STANDARD_LIBRARY_ZIP).toString());
 	}
 
-	private void initDTLibrary() throws IOException {
-		DT_PATH = ReadManagerTwo.extractStandardLibrary(DT_L_NAME).toString();
-		loadDTLibrary();
+	private void initLibrary() throws IOException {
+		String libraryPath = ReadManagerTwo.extractStandardLibrary(libraryZip).toString();
+		libraryResources = List.copyOf(ReadManagerTwo.readAllLibrary(sysMLInteractive, libraryPath, ".sysml"));
+		validateAllAndThrowIfInvalid(libraryResources);
 	}
 
 	public synchronized ResultConverter parse(String ... path) throws SemanticException {
@@ -89,12 +91,6 @@ public class SysmlConverterMain {
 		executor.executeSemanticRules(newUtil,result);
 
 	}
-
-	private void loadDTLibrary() {
-		libraryResources = List.copyOf(ReadManagerTwo.readAllLibrary(sysMLInteractive, DT_PATH, ".sysml"));
-		validateAllAndThrowIfInvalid(libraryResources);
-	}
-
 
 	private void removeAllInputResources() {
 		ResourceDescriptionsData index = ResourceDescriptionsData.ResourceSetAdapter

@@ -1,6 +1,7 @@
 package Mapper;
 
 import Model.AbstractType;
+import Model.Core.Core;
 import Model.Definition;
 import Model.Usage;
 import lombok.Getter;
@@ -9,84 +10,68 @@ import org.omg.sysml.lang.sysml.Feature;
 import org.omg.sysml.lang.sysml.Type;
 import org.omg.sysml.util.TypeUtil;
 
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
 import java.util.Optional;
 
-public class MappedLibraryTypeInfo implements MappedComprable<Type,MappedLibraryTypeInfo>{
-	@Getter private NewUtil newUtil;
-	@Getter private String libraryName;
-	@Getter private Type element;
-	@Getter private Optional<Class<? extends Definition<?,?>>> definitionClass =Optional.empty();
-	@Getter private Optional<Class<? extends Usage<?,?,?>>> usageClass =Optional.empty();
+public class MappedLibraryTypeInfo implements MappedComprable<Type, MappedLibraryTypeInfo> {
+	@Getter private final String libraryName;
+	@Getter private final Type element;
+	@Getter private Optional<Class<? extends AbstractType<?, ?>>> definitionClass = Optional.empty();
+	@Getter private Optional<Class<? extends AbstractType<?, ?>>> usageClass = Optional.empty();
+	@Getter private Class<? extends Core<?>> definitionCore;
+	@Getter private Class<? extends Core<?>> usageCore;
 
-
-	public MappedLibraryTypeInfo(NewUtil newUtil,String libraryName) {
-		this.newUtil = newUtil;
+	public MappedLibraryTypeInfo(NewUtil newUtil, String libraryName) {
 		this.element = newUtil.getLibrayType(libraryName);
 		this.libraryName = libraryName;
-
+		if (element == null) {
+			throw new IllegalStateException("Library type '%s' not found in the loaded libraries".formatted(libraryName));
+		}
 	}
 
-
-	public void setClass(Class<? extends AbstractType<?,?>> definitionClass,boolean override) {
-		boolean success = false;
-		if(Definition.class.isAssignableFrom(definitionClass)){
-			if(this.definitionClass.isPresent() && !override) {
-				throw  new RuntimeException("Cannot add definition class");
+	public void setClass(Class<? extends AbstractType<?, ?>> mappedClass, Class<? extends Core<?>> core, boolean override) {
+		if (Definition.class.isAssignableFrom(mappedClass)) {
+			if (definitionClass.isPresent() && !override) {
+				throw new IllegalStateException("Library type %s has two definition classes: %s and %s".formatted(libraryName, definitionClass.get().getName(), mappedClass.getName()));
 			}
-			this.definitionClass = Optional.of((Class<? extends Definition<?, ?>>) (Class<?>) definitionClass.asSubclass(Definition.class));;
-			success = true;
+			definitionClass = Optional.of(mappedClass);
+			definitionCore = core;
+			return;
 		}
-
-		if(Usage.class.isAssignableFrom(definitionClass)){
-			if(this.usageClass.isPresent() && !override) {
-				throw  new RuntimeException("Cannot add usage class");
+		if (Usage.class.isAssignableFrom(mappedClass)) {
+			if (usageClass.isPresent() && !override) {
+				throw new IllegalStateException("Library type %s has two usage classes: %s and %s".formatted(libraryName, usageClass.get().getName(), mappedClass.getName()));
 			}
-			this.usageClass =Optional.of((Class<? extends Usage<?, ?, ?>>) (Class<?>) definitionClass.asSubclass(Usage.class));
-			success = true;
+			usageClass = Optional.of(mappedClass);
+			usageCore = core;
+			return;
 		}
-
-		if(!success){
-			throw new IllegalStateException("Class %s is not a subclass of Definition or Usage".formatted(definitionClass.getName()));
-
-		}
+		throw new IllegalStateException("Class %s is not a subclass of Definition or Usage".formatted(mappedClass.getName()));
 	}
 
-	public void setClass(Class<? extends AbstractType<?,?>> definitionClass) {
-		setClass(definitionClass,false);
-
+	public void setClass(Class<? extends AbstractType<?, ?>> mappedClass, Class<? extends Core<?>> core) {
+		setClass(mappedClass, core, false);
 	}
-
 
 	@Override
 	public boolean specialices(MappedLibraryTypeInfo other) {
-		return TypeUtil.specializes(element,other.element);
-	}
-
-	@Override
-	public Optional<Constructor<?>> getConstructor(Type type,Mapper mapper) {
-
-		if(type instanceof Classifier){
-			if(this.definitionClass.isPresent()){
-				return Optional.of(findConstructor(definitionClass.get(), type.getClass(),mapper));
-			}
-		}
-
-		if(type instanceof Feature){
-			if(this.usageClass.isPresent()){
-				return Optional.of(findConstructor(usageClass.get(), type.getClass(),mapper));
-			}
-
-		}
-
-		return Optional.empty();
+		return TypeUtil.specializes(element, other.element);
 	}
 
 	@Override
 	public boolean isSpecilizedBy(Type element) {
-		return TypeUtil.specializes(element,this.element);
+		return TypeUtil.specializes(element, this.element);
 	}
 
+	@Override
+	public boolean canCreate(Type element) {
+		if (element instanceof Classifier) return definitionClass.isPresent();
+		if (element instanceof Feature) return usageClass.isPresent();
+		return false;
+	}
 
+	@Override
+	public AbstractType<?, ?> create(Type element, Mapper mapper) {
+		if (element instanceof Classifier) return instantiate(definitionClass.orElseThrow(), definitionCore, element, mapper);
+		return instantiate(usageClass.orElseThrow(), usageCore, element, mapper);
+	}
 }

@@ -7,16 +7,10 @@ import Model.Annotation.MappedMetaClass;
 import org.omg.sysml.lang.sysml.Behavior;
 import org.omg.sysml.lang.sysml.CalculationDefinition;
 
-import java.util.function.Supplier;
 
-@MappedMetaClass(value = CalculationDefinition.class)
+@MappedMetaClass(value = CalculationDefinition.class, core = ActionCore.class)
 public class CustomCalculationDefinition extends FunctionDefinition<ActionCore> {
 	public CustomCalculationDefinition(Behavior sysmlElement, Mapper mapper) {
 		super(sysmlElement, mapper);
-	}
-
-	@Override
-	protected Supplier<ActionCore> getCoreFactory() {
-		return () -> new ActionCore((CalculationDefinition) sysmlElement, instance);
 	}
 }

@@ -11,9 +11,8 @@ import org.omg.sysml.lang.sysml.SuccessionAsUsage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
-@MappedMetaClass(value = SuccessionAsUsage.class)
+@MappedMetaClass(value = SuccessionAsUsage.class, core = EmptyCore.class)
 public class SuccessionMapUsage extends Usage<EmptyCore, SuccessionAsUsage, Definition<?,?>> {
 
 	@Getter private List<ActionMapUsage<?, ?, ?>> targets = new ArrayList<>();
@@ -26,11 +25,6 @@ public class SuccessionMapUsage extends Usage<EmptyCore, SuccessionAsUsage, Defi
 	public void fillSlots() {
 		super.fillSlots();
 		mapTargets();
-	}
-
-	@Override
-	protected Supplier<EmptyCore> getCoreFactory() {
-		return ()->new EmptyCore(sysmlElement, instance);
 	}
 
 	protected void mapTargets(){

@@ -31,6 +31,11 @@ public class Mapper {
 		this.newUtil = newUtil;
 	}
 
+	// definition type the given usage class accepts (from its D type parameter)
+	public Class<?> getRequiredDefinitionType(Class<?> usageClass) {
+		return scanner.requiredDefinitionType(usageClass);
+	}
+
 	public void parse() {
 		for(RawType rawType:List.of(newUtil.getResourceContainer().getLibraryResources(), newUtil.getResourceContainer().getUserResources())){
 			for (Element rootElement : rawType.getRootElement()) {

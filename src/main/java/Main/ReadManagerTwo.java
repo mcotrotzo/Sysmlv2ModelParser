@@ -1,7 +1,6 @@
 package Main;
 
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.jdt.internal.compiler.ReadManager;
 import org.omg.sysml.interactive.SysMLInteractive;
 
 import java.io.IOException;
@@ -12,11 +11,11 @@ import java.util.Set;
 
 public class ReadManagerTwo {
 
-	public static Path extractStandardLibrary(String ressourceName) throws IOException {
-		Path tempDirectory = Files.createTempDirectory(ressourceName + "_temp");
-		try (var input = ReadManager.class.getClassLoader().getResourceAsStream(ressourceName + ".zip")) {
+	public static Path extractStandardLibrary(String zipResourceName) throws IOException {
+		Path tempDirectory = Files.createTempDirectory(zipResourceName.replace(".zip", "") + "_temp");
+		try (var input = ReadManagerTwo.class.getClassLoader().getResourceAsStream(zipResourceName)) {
 			if (input == null) {
-				throw new IllegalStateException("Bundled SysML standard library not found.");
+				throw new IllegalStateException("Library zip '%s' not found on the classpath.".formatted(zipResourceName));
 			}
 			try (var zip = new java.util.zip.ZipInputStream(input)) {
 				java.util.zip.ZipEntry entry;

@@ -3,12 +3,13 @@ package Model.Predefined.MetaClasses.Expression;
 
 import Mapper.Mapper;
 import Model.Annotation.MappedMetaClass;
+import Model.EmptyCore;
 import Model.Usage;
 import org.omg.sysml.lang.sysml.FeatureReferenceExpression;
 
 import java.util.List;
 
-@MappedMetaClass(FeatureReferenceExpression.class)
+@MappedMetaClass(value = FeatureReferenceExpression.class, core = EmptyCore.class)
 public class FeatureReferenceUsage extends ReferenceUsage<FeatureReferenceExpression> {
 
 

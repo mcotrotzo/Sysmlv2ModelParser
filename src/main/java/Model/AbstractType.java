@@ -10,7 +10,6 @@ import lombok.Setter;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public abstract class AbstractType<T extends org.omg.sysml.lang.sysml.Type, C extends Core<? super T>> implements CoreApi<C> {
 
@@ -43,7 +42,6 @@ public abstract class AbstractType<T extends org.omg.sysml.lang.sysml.Type, C ex
 		this.sysmlElement = sysmlElement;
 		this.name = sysmlElement.getName();
 		this.instance = mapper;
-		this.core = getCoreFactory().get();
 
 	}
 
@@ -65,7 +63,5 @@ public abstract class AbstractType<T extends org.omg.sysml.lang.sysml.Type, C ex
 		return core;
 	}
 
-
-	protected abstract Supplier<C> getCoreFactory();
 
 }

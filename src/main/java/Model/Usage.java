@@ -42,11 +42,8 @@ public abstract class Usage<C extends Core<? super U>, U extends Feature,D exten
 		if(mappedDef == null){
 			return;
 		}
-		if (mappedDef instanceof Definition<?, ?>) {
-			definition = Optional.of((D) mappedDef);
-		} else {
-			throw new IllegalArgumentException("Mapped definition is not a Definition: " + mappedDef.getClass().getName());
-		}
+		// typed map throws a clear error if the definition does not fit the D of this usage class
+		definition = Optional.of(instance.map(def, null, Slots.<D>rawClassOf(instance.getRequiredDefinitionType(getClass()))));
 	}
 
 	private Classifier mostSpecificDefinition(List<Classifier> definitions){

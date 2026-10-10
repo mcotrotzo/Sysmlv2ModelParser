@@ -1,10 +1,14 @@
 package Mapper;
 
 import Model.AbstractType;
+import Model.Definition;
+import Model.Usage;
 import Model.Annotation.MappedLibrary;
 
 import Model.Annotation.MappedMetaClass;
+import Model.Core.Core;
 import io.github.classgraph.AnnotationClassRef;
+import io.github.classgraph.AnnotationParameterValueList;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
@@ -12,7 +16,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.omg.sysml.lang.sysml.Type;
 
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.TypeVariable;
 import java.util.*;
 
 @Slf4j
@@ -28,6 +34,7 @@ public class Scanner {
 	@Getter
 	private Map<String ,MappedLibraryTypeInfo> standardinfos = new HashMap<>();
 	@Getter private Map<Class<? extends Type>,MetaclassInfo<?>> metaclassinfos = new HashMap<>();
+	private final Map<Class<?>, Class<?>> definitionTypes = new HashMap<>();
 
 
 	private MappedSort<MappedLibraryTypeInfo> mappedLibraryTypeInfos;
@@ -68,18 +75,15 @@ public class Scanner {
 					standardinfos.put(s.getKey(), s.getValue());
 					continue;
 				}
-				if(s.getValue().getDefinitionClass().isPresent()){
-					standardinfos.get(s.getKey()).setClass(s.getValue().getDefinitionClass().get(),true);
-					log.info("Overriding definition class for library {} with {}", s.getKey(), s.getValue().getDefinitionClass().get().getName());
+				MappedLibraryTypeInfo user = s.getValue();
+				if(user.getDefinitionClass().isPresent()){
+					standardinfos.get(s.getKey()).setClass(user.getDefinitionClass().get(), user.getDefinitionCore(), true);
+					log.info("Overriding definition class for library {} with {}", s.getKey(), user.getDefinitionClass().get().getName());
 				}
-
-				if(s.getValue().getUsageClass().isPresent()){
-					standardinfos.get(s.getKey()).setClass(s.getValue().getUsageClass().get(),true);
-					log.info("Overriding usage class for library {} with {}", s.getKey(), s.getValue().getUsageClass().get().getName());
-
+				if(user.getUsageClass().isPresent()){
+					standardinfos.get(s.getKey()).setClass(user.getUsageClass().get(), user.getUsageCore(), true);
+					log.info("Overriding usage class for library {} with {}", s.getKey(), user.getUsageClass().get().getName());
 				}
-
-
 			}
 			metaclassinfos.putAll(userResult.getMetaclassinfos());
 
@@ -88,6 +92,7 @@ public class Scanner {
 
 			metaclassInfo.sort();
 			mappedLibraryTypeInfos.sort();
+			checkDefinitionTypes();
 
 
 		}
@@ -124,53 +129,126 @@ public class Scanner {
 	}
 
 	private void addMetaClass(ClassInfo classInfo, ScanMappedResult scanMappedResult) {
+		Class<? extends AbstractType<?, ?>> mappedClass = (Class<? extends AbstractType<?, ?>>) classInfo.loadClass();
+
 		if(classInfo.hasAnnotation(MappedMetaClass.class)){
-
-			var s = classInfo.getAnnotationInfo(MappedMetaClass.class);
-			var w = s.getParameterValues();
-			if(w.size() != 1 || !w.get(0).getName().equals("value")){
-				throw new IllegalStateException("Class %s has MappedMetaClass annotation but no parameters".formatted(classInfo.getName()));
-			}
-
-
-			MetaclassInfo metaclassInfo = new MetaclassInfo(getCastedClass(w.getFirst().getValue()));
+			AnnotationParameterValueList values = classInfo.getAnnotationInfo(MappedMetaClass.class).getParameterValues();
+			MetaclassInfo metaclassInfo = new MetaclassInfo(getCastedClass(values.getValue("value")));
 			if(scanMappedResult.getMetaclassinfos().containsKey(metaclassInfo.getMetaclass())){
 				throw new IllegalStateException("Duplicate metaclass mapping for %s: %s and %s".formatted(metaclassInfo.getMetaclass().getName(), scanMappedResult.getMetaclassinfos().get(metaclassInfo.getMetaclass()).getMappedClass().getSimpleName(), classInfo.getName()));
 			}
+			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
+			metaclassInfo.setClass(mappedClass, core);
 			scanMappedResult.getMetaclassinfos().put(metaclassInfo.getMetaclass(), metaclassInfo);
-
-			if(AbstractType.class.isAssignableFrom(classInfo.loadClass())){
-				metaclassInfo.setClass((Class<? extends AbstractType<?, ?>>) classInfo.loadClass());
-			}
-
-			log.info("Found metaclass mapping: {} -> {}", classInfo.getName(), metaclassInfo.getMetaclass().getName());
+			log.info("Found metaclass mapping: {} -> {} (core {})", classInfo.getName(), metaclassInfo.getMetaclass().getName(), core.getSimpleName());
 		}
 
 		if(classInfo.hasAnnotation(MappedLibrary.class)){
-			var s = classInfo.getAnnotationInfo(MappedLibrary.class);
-			var w = s.getParameterValues();
-			if(w.size() != 1 || !w.get(0).getName().equals("libraryName")){
-				throw new IllegalStateException("Class %s has MappedLibraryInfo annotation but no parameters".formatted(classInfo.getName()));
-			}
-
-			if(!scanMappedResult.getStandardinfos().containsKey(w.get(0).getValue())) {
-				MappedLibraryTypeInfo mappedLibraryInfo = new MappedLibraryTypeInfo(newUtil,(String) w.getFirst().getValue());
-				scanMappedResult.getStandardinfos().put(w.get(0).getValue().toString(), mappedLibraryInfo);
-			}
-
-			MappedLibraryTypeInfo mappedLibraryInfo = scanMappedResult.getStandardinfos().get(w.get(0).getValue().toString());
-
-			if(AbstractType.class.isAssignableFrom(classInfo.loadClass())){
-				mappedLibraryInfo.setClass((Class<? extends AbstractType<?, ?>>) classInfo.loadClass());
-			}
-			log.info("Found library mapping: {} -> {}", classInfo.getName(), mappedLibraryInfo.getLibraryName());
+			AnnotationParameterValueList values = classInfo.getAnnotationInfo(MappedLibrary.class).getParameterValues();
+			String libraryName = values.getValue("libraryName").toString();
+			MappedLibraryTypeInfo mappedLibraryInfo = scanMappedResult.getStandardinfos()
+					.computeIfAbsent(libraryName, name -> new MappedLibraryTypeInfo(newUtil, name));
+			Class<? extends Core<?>> core = getCoreClass(values.getValue("core"), mappedClass);
+			mappedLibraryInfo.setClass(mappedClass, core);
+			log.info("Found library mapping: {} -> {} (core {})", classInfo.getName(), libraryName, core.getSimpleName());
 		}
+	}
 
+	private Class<? extends Core<?>> getCoreClass(Object value, Class<?> mappedClass) {
+		if (!(value instanceof AnnotationClassRef ref) || !Core.class.isAssignableFrom(ref.loadClass())) {
+			throw new IllegalStateException("Class %s: 'core' must name a subclass of Core".formatted(mappedClass.getName()));
+		}
+		Class<? extends Core<?>> core = (Class<? extends Core<?>>) ref.loadClass();
+		if (Modifier.isAbstract(core.getModifiers())) {
+			throw new IllegalStateException("Class %s: core %s is abstract".formatted(mappedClass.getName(), core.getName()));
+		}
+		for (Class<?> required : requiredCoreTypes(mappedClass)) {
+			if (!required.isAssignableFrom(core)) {
+				throw new IllegalStateException("Class %s: core %s does not fit the core type %s"
+						.formatted(mappedClass.getName(), core.getSimpleName(), required.getSimpleName()));
+			}
+		}
+		return core;
+	}
 
+	private List<Class<?>> requiredCoreTypes(Class<?> mappedClass) {
+		return resolveTypeArgument(mappedClass, AbstractType.class, 1);
 	}
 
 
+	public Class<?> requiredDefinitionType(Class<?> usageClass) {
+		return definitionTypes.computeIfAbsent(usageClass, c -> {
+			List<Class<?>> types = resolveTypeArgument(c, Usage.class, 2);
+			if (types.size() > 1) {
+				throw new IllegalStateException("Class %s: the definition type D must have a single bound, found %s".formatted(c.getName(), types));
+			}
+			return types.isEmpty() ? Definition.class : types.getFirst();
+		});
+	}
 
+
+	private List<Class<?>> resolveTypeArgument(Class<?> clazz, Class<?> base, int index) {
+		Map<TypeVariable<?>, java.lang.reflect.Type> bindings = new HashMap<>();
+		Class<?> current = clazz;
+		while (current != null && current != base) {
+			java.lang.reflect.Type superType = current.getGenericSuperclass();
+			if (superType instanceof ParameterizedType parameterized && parameterized.getRawType() instanceof Class<?> raw) {
+				TypeVariable<?>[] variables = raw.getTypeParameters();
+				java.lang.reflect.Type[] arguments = parameterized.getActualTypeArguments();
+				for (int i = 0; i < variables.length; i++) {
+					bindings.put(variables[i], bindings.getOrDefault(arguments[i], arguments[i]));
+				}
+				current = raw;
+			} else {
+				current = current.getSuperclass();
+			}
+		}
+		return erasures(bindings.get(base.getTypeParameters()[index]));
+	}
+
+	private void checkMetaclassDefinitionTypes() {
+		List<Class<?>> definitionClasses = new ArrayList<>();
+		standardinfos.values().forEach(info -> info.getDefinitionClass().ifPresent(definitionClasses::add));
+		metaclassinfos.values().stream().map(MetaclassInfo::getMappedClass)
+				.filter(Definition.class::isAssignableFrom).forEach(definitionClasses::add);
+
+		for (MetaclassInfo<?> info : metaclassinfos.values()) {
+			if (!Usage.class.isAssignableFrom(info.getMappedClass())) continue;
+			Class<?> required = requiredDefinitionType(info.getMappedClass());
+			if (required == Definition.class) continue;
+			if (definitionClasses.stream().noneMatch(required::isAssignableFrom)) {
+				throw new IllegalStateException("%s expects definition %s, but no mapped definition class is a %s"
+						.formatted(info.getMappedClass().getSimpleName(), required.getSimpleName(), required.getSimpleName()));
+			}
+		}
+	}
+
+
+	private void checkDefinitionTypes() {
+		checkMetaclassDefinitionTypes();
+		for (MappedLibraryTypeInfo info : standardinfos.values()) {
+			if (info.getUsageClass().isEmpty()) continue;
+			Optional<MappedLibraryTypeInfo> definitionInfo = mappedLibraryTypeInfos.get(info.getElement());
+			if (definitionInfo.isEmpty() || definitionInfo.get().getDefinitionClass().isEmpty()) continue;
+			Class<?> definitionClass = definitionInfo.get().getDefinitionClass().get();
+			Class<?> required = requiredDefinitionType(info.getUsageClass().get());
+			if (!required.isAssignableFrom(definitionClass)) {
+				throw new IllegalStateException("%s expects definition %s, but library type %s builds %s"
+						.formatted(info.getUsageClass().get().getSimpleName(), required.getSimpleName(), info.getLibraryName(), definitionClass.getSimpleName()));
+			}
+		}
+	}
+
+	private List<Class<?>> erasures(java.lang.reflect.Type type) {
+		if (type instanceof Class<?> c) return List.of(c);
+		if (type instanceof ParameterizedType p && p.getRawType() instanceof Class<?> raw) return List.of(raw);
+		if (type instanceof TypeVariable<?> variable) {
+			List<Class<?>> result = new ArrayList<>();
+			for (java.lang.reflect.Type bound : variable.getBounds()) result.addAll(erasures(bound));
+			return result;
+		}
+		return List.of();
+	}
 
 	private boolean isOfClass(Object type){
 		return type instanceof AnnotationClassRef clazz && Type.class.isAssignableFrom(clazz.loadClass());
@@ -186,20 +264,9 @@ public class Scanner {
 
 	public <T extends AbstractType<?,?>,C extends Type> Optional<T> getMappedClass(C element,Mapper mapper,Class<T>clazz) {
 
-		Optional<MappedLibraryTypeInfo> result = mappedLibraryTypeInfos.get(element);
-
-		try {
-			Optional<Constructor<?>> constructor = result.flatMap(x -> x.getConstructor(element,mapper)).or(() -> metaclassInfo.get(element).flatMap(x -> x.getConstructor(element,mapper)));
-			if (constructor.isEmpty()) return Optional.empty();
-
-			return Optional.of(clazz.cast(constructor.get().newInstance(element, mapper)));
-		}
-
-		catch (Exception e) {
-
-			throw new IllegalStateException("Failed to create mapped class for element %s of type %s".formatted(element.getName(), element.getClass().getName()), e);
-		}
-
+		Optional<AbstractType<?, ?>> created = mappedLibraryTypeInfos.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper))
+				.or(() -> metaclassInfo.get(element).<AbstractType<?, ?>>map(x -> x.create(element, mapper)));
+		return created.map(clazz::cast);
 	}
 
 	public Optional<AbstractType<?, ?>> getMappedClass(Type element,Mapper mapper) {
