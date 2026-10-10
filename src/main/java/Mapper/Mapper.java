@@ -94,6 +94,7 @@ public class Mapper {
 		created.setParent(owner);
 		created.setInherited(owner != null && (owner.isInherited() || !isOwnedBy(sysmlElement, owner.getSysmlElement())));		created.setLibrary(newUtil.isfromLibraryRawType(sysmlElement));
 		mapperMap.put(id, created);
+		log.info("Mapped element '%s' as %s (id=%s,path=%s)".formatted(sysmlElement.getName(), created.getClass().getSimpleName(), id, sysmlElement.path()));
 		if (!created.isLibrary()) {
 			created.fillSlots();
 		}
